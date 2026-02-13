@@ -70,20 +70,24 @@ class SimpleSAML_SessionHandlerPHP extends SimpleSAML_SessionHandler
         }
 
         if (!empty($this->cookie_name)) {
-            session_name($this->cookie_name);
+            if (!headers_sent()) {
+                session_name($this->cookie_name);
+            }
         } else {
             $this->cookie_name = session_name();
         }
 
         $params = $this->getCookieParams();
 
-        session_set_cookie_params(
-            $params['lifetime'],
-            $params['path'],
-            $params['domain'],
-            $params['secure'],
-            $params['httponly']
-        );
+        if (!headers_sent()) {
+            session_set_cookie_params(
+                $params['lifetime'],
+                $params['path'],
+                $params['domain'],
+                $params['secure'],
+                $params['httponly']
+            );
+        }
 
         $savepath = $config->getString('session.phpsession.savepath', null);
         if (!empty($savepath)) {
@@ -137,15 +141,17 @@ class SimpleSAML_SessionHandlerPHP extends SimpleSAML_SessionHandler
         // close our own session
         session_write_close();
 
-        session_name($this->previous_session['name']);
-        session_set_cookie_params(
-            $this->previous_session['cookie_params']['lifetime'],
-            $this->previous_session['cookie_params']['path'],
-            $this->previous_session['cookie_params']['domain'],
-            $this->previous_session['cookie_params']['secure'],
-            $this->previous_session['cookie_params']['httponly']
-        );
-        session_id($this->previous_session['id']);
+        if (!headers_sent()) {
+            session_name($this->previous_session['name']);
+            session_set_cookie_params(
+                $this->previous_session['cookie_params']['lifetime'],
+                $this->previous_session['cookie_params']['path'],
+                $this->previous_session['cookie_params']['domain'],
+                $this->previous_session['cookie_params']['secure'],
+                $this->previous_session['cookie_params']['httponly']
+            );
+            session_id($this->previous_session['id']);
+        }
         $this->previous_session = array();
         $this->sessionStart();
 
@@ -184,6 +190,10 @@ class SimpleSAML_SessionHandlerPHP extends SimpleSAML_SessionHandler
     {
         if (!self::hasSessionCookie()) {
             return null; // there's no session cookie, can't return ID
+        }
+
+        if (headers_sent()) {
+            return $_COOKIE[$this->cookie_name];
         }
 
         // do not rely on session_id() as it can return the ID of a previous session. Get it from the cookie instead.
