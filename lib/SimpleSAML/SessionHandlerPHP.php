@@ -117,8 +117,8 @@ class SimpleSAML_SessionHandlerPHP extends SimpleSAML_SessionHandler
              */
             session_cache_limiter('');
         }
-        @session_start();
         session_cache_limiter($cacheLimiter);
+        @session_start();
     }
 
 
@@ -353,6 +353,11 @@ class SimpleSAML_SessionHandlerPHP extends SimpleSAML_SessionHandler
             );
         }
 
+        if (session_id() !== '') {
+            // session already started, close it
+            session_write_close();
+        }
+
         session_set_cookie_params(
             $cookieParams['lifetime'],
             $cookieParams['path'],
@@ -360,11 +365,6 @@ class SimpleSAML_SessionHandlerPHP extends SimpleSAML_SessionHandler
             $cookieParams['secure'],
             $cookieParams['httponly']
         );
-
-        if (session_id() !== '') {
-            // session already started, close it
-            session_write_close();
-        }
 
         session_id($sessionID);
         $this->sessionStart();
